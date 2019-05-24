@@ -32,7 +32,6 @@ import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
 public class BaseServlet extends HttpServlet {
 
     private static final Logger logger = Logger.getLogger(BaseServlet.class);
@@ -52,7 +51,7 @@ public class BaseServlet extends HttpServlet {
                 resp.addHeader("Content-Type", "text/html; charset=utf-8");
             }
 
-            logRequestWithResponse(req, content);
+//            logRequestWithResponse(req, content);
 
             try (PrintWriter os = resp.getWriter()) {
                 os.write(content);
@@ -68,11 +67,12 @@ public class BaseServlet extends HttpServlet {
     protected void logRequestWithResponse(HttpServletRequest req, String resp) throws UnsupportedEncodingException, JSONException, IOException {
         JSONObject log = new JSONObject();
         JSONObject reqJson = new JSONObject();
-
+        reqJson.put("URL", req.getRequestURL().toString());
         reqJson.put("URI", req.getRequestURI());
         reqJson.put("Query", req
                 .getQueryString() != null ? "?" + req.getQueryString().replace("\\", "") : "");
         reqJson.put("Body", IOUtils.toString(req.getReader()));
+        reqJson.put("Protocol", req.getProtocol());
         reqJson.put("IP", req.getRemoteAddr());
         reqJson.put("ForwardedIP", req.getHeader("X-FORWARDED-FOR"));
         reqJson.put("Agent", req.getHeader("User-Agent") != null ? req.getHeader("User-Agent").replace("\\", "") : "");

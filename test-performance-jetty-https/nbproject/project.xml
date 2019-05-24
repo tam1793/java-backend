@@ -3,7 +3,7 @@
     <type>org.netbeans.modules.java.j2seproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/j2se-project/3">
-            <name>DemoJavaServer</name>
+            <name>test-performance-jetty-https</name>
             <source-roots>
                 <root id="src.conf.dir"/>
                 <root id="src.dir"/>

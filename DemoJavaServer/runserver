@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# define PROJ_HOME
+PROJ_HOME="/zserver/java-projects/demo/java-backend/DemoJavaServer"
+# define JAVA_HOME, depends on environment
+JAVA_HOME="/usr/lib/jvm/java-8-oracle"
+
+# define custom variables, different values from different projects
+app_name=DemoJavaServer
+jar_file=dist/$app_name.jar
+pid_file=tmp/$app_name.pid
+#appenv=development
+apppath=$PROJ_HOME
+console_log_file=/data/logs/demo/DemoJavaServer/console.log
+console_log_history=/data/logs/demo/DemoJavaServer/console_history.log
+
+cd $PROJ_HOME
+export JAVA_HOME
+
+function status {
+    if ps -p $1 | grep $1 > /dev/null
+    then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+function start {
+    if [ -f $pid_file ]; then
+        read pid <$pid_file
+        if `status $pid`; then
+            echo "Service is alredy running."
+            return
+        fi
+    fi
+
+    cat $console_log_file >> $console_log_history
+    nohup $JAVA_HOME/bin/java -cp lib \
+    -Xmx2048M \
+    -Duser.timezone=Asia/Ho_Chi_Minh \
+    -Dfile.encoding=UTF-8 \
+    -Dappname=$app_name \
+    -Dapppath=$apppath \
+    -Djava.library.path=/zserver/lib \
+    -Dhttp.proxyHost=10.10.178.250 \
+    -Dhttp.proxyPort=4080 \
+    -Dhttps.proxyHost=10.10.178.250 \
+    -Dhttps.proxyPort=4080 \
+    -Dlog4j.configuration=file:./conf/log4j.ini \
+    -jar ./$jar_file \
+    --add-to-start=http2 \
+    >$console_log_file 2>&1 &
+    pid=$!
+    if [[ -z  "$pid" ]]; then
+        echo "Service failed to start. See log for more info."
+    else
+        echo "$pid" > $pid_file
+        echo "Service has started. PID: $pid"
+    fi
+}
+
+function stop {
+    read pid <$pid_file
+    if `status $pid`; then
+        kill $pid
+    else
+        echo "Service is not running."
+        return 1
+    fi
+    echo "Waiting for the service to finish stopping..."
+    sleep 3
+    while [ 1 ]
+    do
+        if ps -p $pid | grep $pid > /dev/null
+        then
+            sleep 1
+        else
+            break
+        fi
+    done
+    return 0
+}
+
+case "$1" in
+start)
+start
+;;
+stop)
+stop
+;;
+restart)
+if stop; then
+    start
+fi
+;;
+status)
+read pid <$pid_file
+if `status $pid`; then
+    echo "Service is running. PID: $pid"
+else
+    echo "Service is not running."
+fi
+;;
+dump)
+read pid <$pid_file
+$JAVA_HOME/bin/jmap -histo:live $pid
+;;
+*)
+echo "Usage: `basename $0` start|stop|restart|status|dump"
+exit 1
+esac
+
+exit 0
+
